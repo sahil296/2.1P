@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; display: grid; place-items: center; margin: 0; padding: 24px; background: #eef1f6; color: #172033; font-family: system-ui, sans-serif; }
+    .calculator { width: min(100%, 360px); padding: 20px; border-radius: 24px; background: #fff; box-shadow: 0 18px 50px #1d2b451a; }
+    #display { display: block; width: 100%; height: 96px; margin-bottom: 16px; padding: 12px 8px; border: 0; outline: 0; background: transparent; color: #172033; text-align: right; font: 400 46px/1.1 ui-monospace, monospace; }
+    .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    button { height: 62px; border: 0; border-radius: 16px; background: #f1f3f7; color: #20283a; font: 500 22px system-ui, sans-serif; cursor: pointer; transition: filter .12s, transform .12s; }
+    button:hover { filter: brightness(.96); }
+    button:active { transform: scale(.96); }
+    .utility { background: #e2e7ef; }
+    .operator { background: #e8edff; color: #315ee7; }
+    .equals { grid-row: span 2; height: auto; background: #315ee7; color: white; }
+    .zero { grid-column: span 2; }
+    #message { min-height: 20px; margin: 8px 4px 0; color: #bd3545; font-size: 13px; text-align: right; }
+  </style>
+</head>
+<body>
+  <main class="calculator" aria-label="Calculator">
+    <input id="display" aria-label="Display" value="0" readonly>
+    <div class="keys">
+      <button class="utility" data-action="clear">AC</button>
+      <button class="utility" data-action="sign">±</button>
+      <button class="utility" data-action="percent">%</button>
+      <button class="operator" data-op="divide">÷</button>
+      <button data-digit="7">7</button><button data-digit="8">8</button><button data-digit="9">9</button>
+      <button class="operator" data-op="multiply">×</button>
+      <button data-digit="4">4</button><button data-digit="5">5</button><button data-digit="6">6</button>
+      <button class="operator" data-op="subtract">−</button>
+      <button data-digit="1">1</button><button data-digit="2">2</button><button data-digit="3">3</button>
+      <button class="operator" data-op="add">+</button>
+      <button class="zero" data-digit="0">0</button><button data-action="decimal">.</button>
+      <button class="equals" data-action="equals">=</button>
+    </div>
+    <p id="message" role="status" aria-live="polite"></p>
+  </main>
+  <script>
+    const display = document.getElementById("display");
+    const message = document.getElementById("message");
+    let stored = null, operation = null, replace = false;
+    const show = value => { display.value = String(value).slice(0, 14); };
+    const clear = () => { show(0); stored = null; operation = null; replace = false; message.textContent = ""; };
+    const calculate = async (op, a, b) => {
+      const response = await fetch("/calc", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ operation: op, a, b }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Calculation failed");
+      return Number(data.result);
+    };
+    async function equals() {
+      if (operation === null || stored === null) return;
+      const a = stored, b = Number(display.value), op = operation;
+      message.textContent = "";
+      try { show(await calculate(op, a, b)); stored = null; operation = null; replace = true; }
+      catch (error) { message.textContent = error.message; }
+    }
+    document.querySelector(".keys").addEventListener("click", async event => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      message.textContent = "";
+      if (button.dataset.digit !== undefined) {
+        if (replace || display.value === "0") { show(button.dataset.digit); replace = false; }
+        else show(display.value + button.dataset.digit);
+      } else if (button.dataset.action === "clear") clear();
+      else if (button.dataset.action === "decimal") { if (replace) { show("0."); replace = false; } else if (!display.value.includes(".")) show(display.value + "."); }
+      else if (button.dataset.action === "sign") show(Number(display.value) * -1);
+      else if (button.dataset.action === "percent") show(Number(display.value) / 100);
+      else if (button.dataset.op) { stored = Number(display.value); operation = button.dataset.op; replace = true; }
+      else if (button.dataset.action === "equals") await equals();
+    });
+    document.addEventListener("keydown", async event => {
+      if (/^[0-9]$/.test(event.key)) document.querySelector(`[data-digit="${event.key}"]`).click();
+      else if (event.key === ".") document.querySelector('[data-action="decimal"]').click();
+      else if (event.key === "Enter" || event.key === "=") { event.preventDefault(); await equals(); }
+      else if (event.key === "Escape") clear();
+      else if ({ "+": "add", "-": "subtract", "*": "multiply", "/": "divide" }[event.key]) {
+        const op = { "+": "add", "-": "subtract", "*": "multiply", "/": "divide" }[event.key];
+        stored = Number(display.value); operation = op; replace = true;
+      }
+      else if (event.key === "Backspace") { show(display.value.length > 1 ? display.value.slice(0, -1) : 0); }
+    });
+  </script>
+</body>
+</html>
