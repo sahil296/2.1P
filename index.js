@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -63,7 +63,11 @@ app.get('/calc/:operation/:a/:b', (req, res) => {
 // Unknown API paths get a JSON 404 (static files are handled above).
 app.use('/api', (req, res) => res.status(404).json({ error: 'no such endpoint' }));
 
-app.listen(PORT, () => {
+app.listen(PORT, (err) => {
+  if (err) {
+    console.error(`Could not start server on port ${PORT}: ${err.message}`);
+    process.exit(1);
+  }
   console.log(`Calculator server running at http://localhost:${PORT}`);
 });
 

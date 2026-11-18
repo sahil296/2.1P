@@ -10,10 +10,10 @@ Node.js 18 or newer.
 
 ```sh
 npm install
-node index.js
+npm start
 ```
 
-The server listens on port 3000 by default. Set `PORT` to use another port.
+The server listens on port 4000 by default. Set `PORT` to use another port.
 
 ## Endpoints
 
@@ -24,9 +24,9 @@ The server listens on port 3000 by default. Set `PORT` to use another port.
 Examples:
 
 ```sh
-curl "http://localhost:3000/add?a=2&b=3"
-curl -X POST http://localhost:3000/calc -H "Content-Type: application/json" -d '{"operation":"multiply","a":4,"b":5}'
-curl http://localhost:3000/calc/divide/10/2
+curl "http://localhost:4000/add?a=2&b=3"
+curl -X POST http://localhost:4000/calc -H "Content-Type: application/json" -d '{"operation":"multiply","a":4,"b":5}'
+curl http://localhost:4000/calc/divide/10/2
 ```
 
 ## Project structure
@@ -35,3 +35,11 @@ curl http://localhost:3000/calc/divide/10/2
 - `public/index.html` — calculator page
 - `package.json` — project metadata and start command
 - `package-lock.json` — locked dependency versions
+
+## Troubleshooting
+
+If you see "Could not start server ... address already in use", another program is using the port. Start on a different port instead:
+
+```sh
+PORT=5000 npm start
+```
